@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Audiobooks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F3F3F3; --panel:#FFFFFF; --ink:#262626; --muted:#595959; --line:#DDDDDD; --field:#C4C4C4;
+  --accent:#6D5BF7; --accent-ink:#FFFFFF; --soft:#F0EFFE; --warn:#C4243A; --tick:#4A39D6;
+  --shadow:0 1px 2px rgba(38,38,38,.06),0 4px 14px rgba(38,38,38,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1C1C1C; --panel:#2A2A2A; --ink:#FFFFFF; --muted:#CFCFCF; --line:#454545; --field:#6A6A6A;
+    --accent:#A79BFF; --accent-ink:#1A1433; --soft:#37335A; --warn:#FF8A97; --tick:#D9D3FF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1C1C; --panel:#2A2A2A; --ink:#FFFFFF; --muted:#CFCFCF; --line:#454545; --field:#6A6A6A;
+  --accent:#A79BFF; --accent-ink:#1A1433; --soft:#37335A; --warn:#FF8A97; --tick:#D9D3FF;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Outfit","Calibri","Helvetica Neue",Arial,sans-serif}
+main{max-width:680px;margin:0 auto;padding:22px 16px 56px}
+h1,h2,h3,.serif{font-family:inherit;font-weight:700;letter-spacing:-.01em}
+h1{font-size:32px;line-height:1.15;margin:6px 0 6px}
+h2{font-size:22px;margin:0}
+.sub{color:var(--muted);margin:0 0 20px}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.card{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);padding:20px}
+.btn{background:var(--accent);color:var(--accent-ink);border:2px solid var(--accent);border-radius:10px;padding:10px 20px;min-height:46px;font-weight:600}
+.btn.ghost{background:var(--panel);color:var(--accent);border-color:var(--accent)}
+.btn.danger{background:var(--panel);color:var(--warn);border-color:var(--warn)}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spread{justify-content:space-between}
+
+/* library */
+.book{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--panel);border:0;border-radius:18px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px}
+.cov{flex:0 0 56px;width:56px;height:56px;border-radius:12px;background:var(--soft);color:var(--accent);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cov svg{width:28px;height:28px}
+.cov img{width:100%;height:100%;object-fit:cover}
+.binfo{flex:1;min-width:0}
+.book .bt{font-size:19px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.book .bm{color:var(--muted);font-size:15px;margin:2px 0 10px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.empty{color:var(--muted);padding:28px 4px}
+.foot{color:var(--muted);font-size:14px;margin-top:22px}
+.help{margin-top:16px;padding:14px 18px}
+.help summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}
+.help p,.help li{font-size:15px;color:var(--ink)}
+.help ul{margin:0 0 10px;padding-left:20px}
+
+/* add */
+#addView .field{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin:0 0 16px}
+.field label{display:block;font-weight:600;margin-bottom:8px}
+.field small{display:block;color:var(--muted);font-size:15px;margin-top:10px}
+input[type=text],input[type=url],textarea,select{width:100%;background:var(--panel);border:2px solid var(--field);border-radius:10px;padding:11px 12px;min-height:46px;font-size:16px}
+textarea{min-height:220px;font-size:16px}
+a.linkbtn{display:inline-flex;align-items:center;text-decoration:none}
+.msg{color:var(--muted);margin-top:12px}
+.dz{border:2px dashed var(--accent);border-radius:14px;padding:16px;background:var(--soft);display:flex;flex-direction:column;gap:10px;align-items:flex-start;transition:background .15s}
+.dz.over{background:var(--panel);border-style:solid}
+.dz .dzt{font-weight:600}
+.dz .dzs{color:var(--accent);font-weight:600;min-height:1.2em;overflow-wrap:anywhere}
+.dz input[type=file]{max-width:100%;font-size:15px}
+#setPreview{margin-top:12px;max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+#setPreview h3{margin:0;padding:12px 14px 6px;font-size:16px}
+#setPreview ul{list-style:none;margin:0;padding:0 0 6px}
+#setPreview li{display:flex;justify-content:space-between;gap:12px;padding:8px 14px;font-size:15px;border-top:1px solid var(--line)}
+#setPreview li span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* player */
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.now{margin:4px 0 4px;font-size:27px;line-height:1.2;font-weight:700;overflow-wrap:anywhere}
+#playView .top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}
+#playView .top .btn{padding:8px 14px}
+.bktop{margin:0;font-size:19px;line-height:1.25;font-weight:700;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.now{margin-bottom:6px}
+.seekwrap{position:relative;height:40px;margin:10px 0 0}
+.ticks{position:absolute;left:0;right:0;top:50%;height:30px;transform:translateY(-50%);pointer-events:none;z-index:1}
+.ticks b{position:absolute;top:50%;transform:translateY(-50%);width:2px;height:16px;margin-left:-1px;background:var(--tick);border-radius:1px}
+.ticks b.edge{width:3px;height:30px;margin-left:-1px;background:var(--ink);opacity:.85;border-radius:2px}
+.ticks b.end{margin-left:-2px}
+input[type=range]{--p:0%;-webkit-appearance:none;appearance:none;position:absolute;inset:0;width:100%;margin:0;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(to right,var(--accent) var(--p),var(--line) var(--p))}
+input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:var(--line)}
+input[type=range]::-moz-range-progress{height:8px;border-radius:4px;background:var(--accent)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--accent);margin-top:-10px;border:4px solid var(--panel);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);border:4px solid var(--panel)}
+.times{display:flex;justify-content:space-between;color:var(--muted);font-size:15px;font-variant-numeric:tabular-nums}
+.ctrls{display:flex;justify-content:center;align-items:flex-start;gap:14px;margin:18px 0 4px}
+.cw{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:10px}
+.cw.big{margin-top:0}
+.cw span{font-size:13px;line-height:1.15;text-align:center;max-width:72px;color:var(--ink);font-weight:500}
+.ctrls button{background:var(--soft);color:var(--accent);border:0;border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;padding:0}
+.ctrls button.play{width:76px;height:76px;background:var(--accent);color:var(--accent-ink)}
+.ctrls svg{width:26px;height:26px}
+.ctrls .play svg{width:34px;height:34px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0 22px}
+.opts label{font-size:15px;color:var(--muted);display:block;margin-bottom:6px;font-weight:500}
+.stepper{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:2px solid var(--field);border-radius:10px;padding:2px}
+.stepper button{width:46px;height:40px;border:0;border-radius:8px;background:var(--soft);color:var(--accent);font-size:24px;font-weight:600;line-height:1;padding:0}
+.stepper span{font-variant-numeric:tabular-nums;font-weight:600}
+#chlist{list-style:none;margin:12px 0 0;padding:0;background:var(--panel);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+#chlist li{display:flex;align-items:stretch}
+#chlist li+li{border-top:1px solid var(--line)}
+#chlist button.chb{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:1;min-width:0;min-height:52px;background:transparent;border:0;text-align:left;padding:12px 16px 12px 4px}
+#chlist button.chk{flex:0 0 52px;width:52px;background:transparent;border:0;border-left:5px solid transparent;display:flex;align-items:center;justify-content:center;padding:0}
+#chlist li.on{background:var(--soft)}
+#chlist li.on button.chk{border-left-color:var(--accent)}
+#chlist li.on button.chb{font-weight:700}
+.chk i{width:26px;height:26px;border-radius:50%;border:2px solid var(--field);display:flex;align-items:center;justify-content:center;color:var(--accent-ink)}
+.chk i svg{width:16px;height:16px;opacity:0}
+li.done .chk i{background:var(--accent);border-color:var(--accent)}
+li.done .chk i svg{opacity:1}
+li.done button.chb .cn{color:var(--muted);font-weight:400}
+#doneCount{margin:8px 2px 0;font-size:15px}
+#chlist .ct{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hint{padding:16px;color:var(--muted)}
+.capt{text-align:center;color:var(--muted);font-size:14px;margin:6px 0 0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#262626;color:#FFFFFF;padding:12px 18px;border-radius:999px;font-size:15px;max-width:92%;z-index:5;text-align:center}
+
+@media (max-width:420px){
+  main{padding:16px 12px 48px}
+  h1{font-size:28px}
+  .now{font-size:24px}
+  .card{padding:16px}
+  .ctrls{gap:6px}
+  .cw{margin-top:9px}
+  .cw.big{margin-top:0}
+  .ctrls button{width:48px;height:48px}
+  .ctrls button.play{width:66px;height:66px}
+  .ctrls svg{width:22px;height:22px}
+  .top .btn{flex:1 1 auto}
+}
+@media (max-width:359px){ .opts{grid-template-columns:1fr} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<main>
+
+<!-- LIBRARY -->
+<section id="libView">
+  <h1>My audiobooks</h1>
+  <p class="sub">Your books stay on this device. Nothing is uploaded.</p>
+  <div class="row" style="margin-bottom:16px"><button class="btn" id="addBtn">Add book</button></div>
+
+  <div id="list"></div>
+
+  <p class="foot" id="usage"></p>
+
+  <details class="card help">
+    <summary>Free up space on this device</summary>
+    <p><strong>1. The tool's copy.</strong> Open a book and tap Delete book. This removes the book and its saved place from the tool. The storage line above updates.</p>
+    <p><strong>2. The downloaded file.</strong> When you downloaded the MP3 from Drive, your phone saved its own copy. A web page cannot open or delete it, so delete it yourself:</p>
+    <ul>
+      <li><strong>iPhone:</strong> open the Files app, go to Downloads, press and hold the MP3, tap Delete.</li>
+      <li><strong>Android:</strong> open the Files app, go to Downloads, press and hold the MP3, tap Delete.</li>
+      <li><strong>Computer:</strong> open your Downloads folder and delete the MP3.</li>
+    </ul>
+    <p><strong>3. If space still looks used.</strong> Clear this site's data in your browser. iPhone: Settings, Safari, Advanced, Website Data. Android Chrome: Settings, Site settings, All sites, find this site, Clear. This removes all books from the tool.</p>
+  </details>
+</section>
+
+<!-- ADD -->
+<section id="addView" hidden>
+  <div class="top"><button class="btn ghost" id="addBack">Back</button></div>
+  <h1>Add a book</h1>
+  <p class="sub">Two quick steps.</p>
+
+  <div class="field">
+    <label for="link">Step 1. Paste the Google Drive link</label>
+    <input type="url" id="link" placeholder="https://drive.google.com/file/d/...">
+    <div style="margin-top:10px"><a class="btn ghost linkbtn" id="dl" href="#" target="_blank" rel="noopener" hidden>Download this file</a></div>
+    <small>Tap Download and wait for it to finish. Big files may show a Google warning: choose Download anyway.</small>
+  </div>
+
+  <div class="field">
+    <label for="file">Step 2. Choose the downloaded MP3</label>
+    <div class="dz" id="dzBook"><span class="dzt">Drag the MP3 here, or</span><input type="file" id="file" accept="audio/*,.mp3,.m4a,.m4b"><span class="dzs"></span></div>
+    <small>Already have the file on your device? Skip step 1.</small>
+  </div>
+
+  <div class="field">
+    <label for="title">Book title</label>
+    <input type="text" id="title" placeholder="Filled in from the file name">
+  </div>
+
+  <div class="field">
+    <label for="setLink">Chapters file (optional)</label>
+    <p class="sub" id="setsInfo" style="margin:0 0 12px;font-size:15px"></p>
+    <input type="url" id="setLink" placeholder="Paste the Drive link of your chapters file">
+    <div style="margin-top:10px"><a class="btn ghost linkbtn" id="setDl" href="#" target="_blank" rel="noopener" hidden>Download chapters file</a></div>
+    <div class="dz" id="dzSet" style="margin-top:12px"><span class="dzt">Drag the chapters .txt file here, or</span><input type="file" id="setFile" accept=".txt,text/plain"><span class="dzs"></span></div>
+    <div id="setPreview" hidden></div>
+    <small>Plain text file. Each book starts with a line like # Book title, followed by lines like 0:12:30 Chapter name. Load it once and the tool remembers it.</small>
+  </div>
+
+  <button class="btn" id="saveBtn" disabled>Save book</button>
+  <p class="msg" id="addMsg" role="status"></p>
+</section>
+
+<!-- PLAYER -->
+<section id="playView" hidden>
+  <div class="top">
+    <button class="btn ghost" id="playBack">Library</button>
+    <h1 class="bktop" id="bkTitle"></h1>
+    <button class="btn danger" id="delBtn">Delete book</button>
+  </div>
+  <div class="card">
+  <h2 class="now" id="chNow"></h2>
+
+  <div class="seekwrap">
+    <div class="ticks" id="ticks"></div>
+    <input type="range" id="seek" min="0" max="100" step="1" value="0" aria-label="Position">
+  </div>
+  <div class="times"><span id="tCur">0:00</span><span id="tLeft">0:00</span></div>
+
+  <div class="ctrls">
+    <div class="cw"><button id="prevCh" aria-label="Previous chapter"></button><span>Previous chapter</span></div>
+    <div class="cw"><button id="back15" aria-label="Back 15 seconds"></button></div>
+    <div class="cw big"><button id="play" class="play" aria-label="Play"></button></div>
+    <div class="cw"><button id="fwd30" aria-label="Forward 30 seconds"></button></div>
+    <div class="cw"><button id="nextCh" aria-label="Next chapter"></button><span>Next chapter</span></div>
+  </div>
+  </div>
+
+  <div class="opts card" style="display:grid">
+    <div><label id="spLabel">Speed</label>
+      <div class="stepper" role="group" aria-labelledby="spLabel">
+        <button id="spDown" aria-label="Slower">-</button>
+        <span id="spVal" aria-live="polite">1.00x</span>
+        <button id="spUp" aria-label="Faster">+</button>
+      </div></div>
+    <div><label for="sleep">Sleep timer</label>
+      <select id="sleep">
+        <option value="0">Off</option><option value="15">15 minutes</option><option value="30">30 minutes</option>
+        <option value="45">45 minutes</option><option value="60">60 minutes</option>
+      </select></div>
+  </div>
+
+  <div class="row spread">
+    <h2>Chapters</h2>
+    <button class="btn ghost" id="editBtn">Edit chapters</button>
+  </div>
+  <p class="sub" id="doneCount"></p>
+  <ul id="chlist"></ul>
+
+  <div id="editor" class="card" hidden style="margin-top:14px">
+    <div class="field">
+      <label for="chText">One chapter per line: time, then name</label>
+      <textarea id="chText" spellcheck="false" placeholder="0:00:00 Introduction&#10;0:12:30 Chapter 1&#10;0:45:10 Chapter 2"></textarea>
+      <small>Times can be 12:30 or 1:12:30.</small>
+    </div>
+    <div class="row">
+      <button class="btn" id="chSave">Save chapters</button>
+      <button class="btn ghost" id="chHere">Add a line at current time</button>
+      <button class="btn ghost" id="chRead">Load saved chapters</button>
+    </div>
+  </div>
+</section>
+
+</main>
+<audio id="audio" preload="metadata"></audio>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const audio = $('#audio');
+const state = { books: [], cur: null, url: null, lastSave: 0, sleepTimer: null, lastCh: -2, delArmed: false };
+
+/* ---------- icons ---------- */
+const SVG = d => `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  play: SVG('<path d="M8 5v14l11-7z"/>'),
+  pause: SVG('<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'),
+  prev: SVG('<path d="M6 6h2v12H6zM9.5 12 18 6v12z"/>'),
+  next: SVG('<path d="M16 6h2v12h-2zM6 18V6l8.5 6z"/>'),
+  back: SVG('<path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/><text x="12" y="16.5" font-size="7.5" text-anchor="middle" font-weight="700" font-family="Outfit,Arial,sans-serif">15</text>'),
+  fwd: SVG('<path d="M12 5V2l5 4-5 4V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/><text x="12" y="16.5" font-size="7.5" text-anchor="middle" font-weight="700" font-family="Outfit,Arial,sans-serif">30</text>'),
+  book: SVG('<path d="M12 3a9 9 0 0 0-9 9v6a3 3 0 0 0 3 3h1a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H5v-1a7 7 0 0 1 14 0v1h-2a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1a3 3 0 0 0 3-3v-6a9 9 0 0 0-9-9z"/>')
+};
+$('#prevCh').innerHTML = ICON.prev; $('#nextCh').innerHTML = ICON.next;
+$('#back15').innerHTML = ICON.back; $('#fwd30').innerHTML = ICON.fwd; $('#play').innerHTML = ICON.play;
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(sec){
+  sec = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+}
+function fmtFull(sec){
+  sec = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function parseTime(str){
+  const p = str.split(':').map(Number);
+  if (p.some(isNaN)) return null;
+  if (p.length === 2) return p[0]*60 + p[1];
+  if (p.length === 3) return p[0]*3600 + p[1]*60 + p[2];
+  return null;
+}
+let toastT;
+function toast(msg, ms){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms || 3500);
+}
+function show(id){
+  for (const v of ['libView','addView','playView']) $('#'+v).hidden = (v !== id);
+  window.scrollTo(0,0);
+}
+
+/* ---------- storage (browser database on this device) ---------- */
+let db = null;
+function openDB(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('audiobooks', 2);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      if (!d.objectStoreNames.contains('books')) d.createObjectStore('books', {keyPath:'id'});
+      if (!d.objectStoreNames.contains('files')) d.createObjectStore('files');
+      if (!d.objectStoreNames.contains('sets')) d.createObjectStore('sets');
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function tx(store, mode, fn){
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, mode);
+    const rq = fn(t.objectStore(store));
+    t.oncomplete = () => res(rq ? rq.result : undefined);
+    t.onerror = () => rej(t.error);
+    t.onabort = () => rej(t.error);
+  });
+}
+const saveBook = b => tx('books','readwrite', s => s.put(b));
+
+/* ---------- read embedded chapters (ID3 CHAP) ---------- */
+function synch(b, p){ return ((b[p]&127)<<21) | ((b[p+1]&127)<<14) | ((b[p+2]&127)<<7) | (b[p+3]&127); }
+function decodeText(bytes){
+  if (!bytes.length) return '';
+  const enc = bytes[0], body = bytes.slice(1);
+  let label = 'iso-8859-1';
+  if (enc === 1){ label = (body[0] === 0xFE && body[1] === 0xFF) ? 'utf-16be' : 'utf-16le'; }
+  else if (enc === 2) label = 'utf-16be';
+  else if (enc === 3) label = 'utf-8';
+  return new TextDecoder(label).decode(body).replace(/\u0000/g,'').trim();
+}
+function frames(buf, start, stop, ver){
+  const out = [], dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let p = start;
+  while (p + 10 <= stop){
+    if (buf[p] === 0) break;
+    const id = String.fromCharCode(buf[p],buf[p+1],buf[p+2],buf[p+3]);
+    const size = ver === 4 ? synch(buf, p+4) : dv.getUint32(p+4);
+    if (size <= 0 || p + 10 + size > stop) break;
+    out.push({ id, data: buf.subarray(p+10, p+10+size) });
+    p += 10 + size;
+  }
+  return out;
+}
+async function readChapters(file){
+  try{
+    const head = new Uint8Array(await file.slice(0,10).arrayBuffer());
+    if (String.fromCharCode(head[0],head[1],head[2]) !== 'ID3') return [];
+    const ver = head[3], flags = head[5], size = synch(head, 6);
+    const buf = new Uint8Array(await file.slice(0, 10 + size).arrayBuffer());
+    const dv = new DataView(buf.buffer);
+    let p = 10;
+    if (flags & 0x40) p += (ver === 4 ? synch(buf, p) : dv.getUint32(p) + 4);
+    const chaps = [];
+    for (const f of frames(buf, p, 10 + size, ver)){
+      if (f.id !== 'CHAP') continue;
+      let i = 0; while (i < f.data.length && f.data[i] !== 0) i++;
+      const q = i + 1;
+      const fdv = new DataView(f.data.buffer, f.data.byteOffset, f.data.byteLength);
+      const startMs = fdv.getUint32(q);
+      let name = '';
+      for (const sf of frames(f.data, q + 16, f.data.length, ver)){
+        if (sf.id === 'TIT2'){ name = decodeText(sf.data); break; }
+      }
+      chaps.push({ t: Math.round(startMs/1000), name: name || 'Chapter' });
+    }
+    chaps.sort((a,b) => a.t - b.t);
+    return chaps;
+  } catch(e){ return []; }
+}
+
+/* ---------- chapter lists (known in advance) ---------- */
+const norm = t => String(t).toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, ' ').trim();
+function parseChapterLines(text){
+  const out = [];
+  for (const line of text.split(/\r?\n|\r/)){
+    const m = line.match(/^\s*(\d+(?::\d{1,2}){1,2})(?:\.\d+)?\s*[-:\u2013\u2014]?\s*(.*)$/);
+    if (!m) continue;
+    const t = parseTime(m[1]); if (t === null) continue;
+    out.push({ t, name: m[2].trim() || 'Chapter' });
+  }
+  return out.sort((a,b) => a.t - b.t);
+}
+function parseChapterFile(text, fileName){
+  const sets = []; let cur = null;
+  for (const raw of text.replace(/^\uFEFF/, '').split(/\r?\n|\r/)){
+    const h = raw.match(/^\s*#\s*(.+?)\s*$/);
+    if (h){ cur = { title: h[1], lines: [] }; sets.push(cur); }
+    else if (cur) cur.lines.push(raw);
+  }
+  let result = sets.map(x => ({ title: x.title, chapters: parseChapterLines(x.lines.join('\n')) })).filter(x => x.chapters.length);
+  if (!result.length){
+    const all = parseChapterLines(text);
+    if (all.length){
+      const t = String(fileName || 'Book').replace(/\.[^.]+$/, '').replace(/\s*[-:]?\s*chapters?( file)?\s*$/i, '').trim() || 'Book';
+      result = [{ title: t, chapters: all }];
+    }
+  }
+  return result;
+}
+async function allSets(){
+  const keys = await tx('sets','readonly', s => s.getAllKeys());
+  const vals = await tx('sets','readonly', s => s.getAll());
+  return keys.map((k,i) => vals[i]);
+}
+async function findSet(title){
+  const n = norm(title); if (!n) return null;
+  const sets = await allSets();
+  return sets.find(x => norm(x.title) === n) || sets.find(x => { const m = norm(x.title); return m && (n.includes(m) || m.includes(n)); }) || null;
+}
+async function showSetsInfo(){
+  try{
+    const sets = await allSets();
+    $('#setsInfo').textContent = sets.length ? `${sets.length} book${sets.length>1?'s':''} with saved chapters: ${sets.map(x=>x.title).join(', ')}.` : 'No chapter lists loaded yet. Load one file and new books find their chapters by title.';
+  } catch(e){}
+}
+$('#setLink').oninput = () => {
+  const url = $('#setLink').value.trim(), id = driveId(url), a = $('#setDl');
+  if (id){
+    a.href = /docs\.google\.com\/document/.test(url)
+      ? `https://docs.google.com/document/d/${id}/export?format=txt`
+      : `https://drive.google.com/uc?export=download&id=${id}`;
+    a.hidden = false;
+  } else a.hidden = true;
+};
+$('#setFile').onchange = async () => {
+  const f = $('#setFile').files[0]; if (!f) return;
+  try{
+    const sets = parseChapterFile(await f.text(), f.name);
+    if (!sets.length){ toast('No chapters found. Check the file format.'); return; }
+    for (const x of sets) await tx('sets','readwrite', s => s.put(x, norm(x.title)));
+    let applied = 0;
+    for (const b of state.books){
+      if (!b.chapters.length){
+        const m = sets.find(x => norm(x.title) === norm(b.title)) || sets.find(x => norm(b.title).includes(norm(x.title)) || norm(x.title).includes(norm(b.title)));
+        if (m){ b.chapters = m.chapters; await saveBook(b); applied++; }
+      }
+    }
+    $('#setFile').value = '';
+    const pv = $('#setPreview');
+    pv.innerHTML = sets.map(x => `<h3>${esc(x.title)}: ${x.chapters.length} chapters</h3><ul>${x.chapters.map(c => `<li><span>${esc(c.name)}</span><span>${fmt(c.t)}</span></li>`).join('')}</ul>`).join('');
+    pv.hidden = false;
+    const z = document.querySelector('#dzSet .dzs');
+    if (z) z.textContent = 'Loaded: ' + sets.map(x => `${x.title} (${x.chapters.length} chapters)`).join(', ');
+    renderLibrary(); showSetsInfo();
+    toast(`Loaded chapters for ${sets.length} book${sets.length>1?'s':''}${applied ? `, added to ${applied} in your library` : ''}.`);
+  } catch(e){ toast('Could not read that file.'); }
+};
+
+/* ---------- library ---------- */
+function renderLibrary(){
+  const box = $('#list'); box.innerHTML = '';
+  if (!state.books.length){
+    box.innerHTML = '<p class="empty">No books yet. Tap Add book to bring in your first one.</p>';
+    return;
+  }
+  state.books.sort((a,b) => (b.lastPlayed||b.added) - (a.lastPlayed||a.added));
+  for (const b of state.books){
+    const pct = b.duration ? Math.min(100, Math.round(b.position / b.duration * 100)) : 0;
+    const el = document.createElement('button');
+    el.className = 'book';
+    const chapters = b.chapters.length ? `${b.chapters.length} chapters` : 'No chapters yet';
+    el.innerHTML = `<div class="cov">${ICON.book}</div><div class="binfo"><div class="bt">${esc(b.title)}</div><div class="bm">${pct}% listened, ${chapters}${b.position ? ', resume at ' + fmt(b.position) : ''}</div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+    el.onclick = () => openBook(b.id);
+    box.append(el);
+  }
+}
+async function showUsage(){
+  try{
+    const e = await navigator.storage.estimate();
+    const gb = n => (n/1073741824).toFixed(2);
+    $('#usage').textContent = `Storage used on this device: ${gb(e.usage)} GB of about ${gb(e.quota)} GB available.`;
+  } catch(e){ $('#usage').textContent = ''; }
+}
+
+/* ---------- add ---------- */
+function driveId(url){
+  const m = url.match(/\/d\/([\w-]+)/) || url.match(/[?&]id=([\w-]+)/);
+  return m ? m[1] : null;
+}
+$('#addBtn').onclick = () => {
+  $('#link').value = ''; $('#file').value = ''; $('#title').value = ''; $('#addMsg').textContent = 'Choose the MP3 to enable Save book.';
+  $('#dl').hidden = true; $('#saveBtn').disabled = true;
+  document.querySelectorAll('.dzs').forEach(x => x.textContent = '');
+  $('#setPreview').hidden = true; $('#setPreview').innerHTML = '';
+  $('#setLink').value = ''; $('#setDl').hidden = true; $('#setFile').value = ''; showSetsInfo();
+  show('addView');
+};
+$('#addBack').onclick = () => show('libView');
+$('#link').oninput = () => {
+  const id = driveId($('#link').value.trim());
+  const a = $('#dl');
+  if (id){ a.href = `https://drive.google.com/uc?export=download&id=${id}`; a.hidden = false; }
+  else a.hidden = true;
+};
+$('#file').onchange = () => {
+  const f = $('#file').files[0];
+  $('#saveBtn').disabled = !f;
+  $('#addMsg').textContent = f ? '' : 'Choose the MP3 to enable Save book.';
+  if (f && !$('#title').value.trim()) $('#title').value = f.name.replace(/\.[^.]+$/, '');
+};
+$('#saveBtn').onclick = async () => {
+  const f = $('#file').files[0]; if (!f) return;
+  const btn = $('#saveBtn'), msg = $('#addMsg');
+  btn.disabled = true; msg.textContent = 'Checking the file...';
+  const info = await sniff(f);
+  if (['html','tiny','aax','unknown'].includes(info.kind)){ msg.textContent = badFileMessage(info); btn.disabled = false; return; }
+  msg.textContent = 'Saving. Large files can take a minute.';
+  try{
+    try{ if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch(e){}
+    let chapters = await readChapters(f);
+    let fromList = false;
+    if (!chapters.length){
+      const title0 = $('#title').value.trim() || f.name.replace(/\.[^.]+$/, '');
+      const m = await findSet(title0);
+      if (m){ chapters = m.chapters; fromList = true; }
+    }
+    const id = 'b' + Date.now();
+    const b = { id, title: $('#title').value.trim() || f.name.replace(/\.[^.]+$/, ''), chapters,
+                position: 0, speed: 1, duration: 0, added: Date.now(), lastPlayed: 0, source: $('#link').value.trim() };
+    await tx('files','readwrite', s => s.put(f, id));
+    await saveBook(b);
+    state.books.push(b);
+    renderLibrary(); showUsage();
+    await openBook(id);
+    toast(chapters.length ? (fromList ? `Added ${chapters.length} chapters from your chapter list.` : `Found ${chapters.length} chapters inside the file.`) : 'Saved. Add your chapters with Edit chapters.');
+  } catch(e){
+    msg.textContent = 'Could not save this file. Your device may be out of space, or the browser limits file size.';
+    btn.disabled = false;
+  }
+};
+
+/* ---------- drag and drop ---------- */
+function giveFile(input, file){
+  try{
+    const dt = new DataTransfer(); dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  } catch(e){ toast('Drag and drop is not supported here. Use the Choose File button.'); }
+}
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+window.addEventListener('dragover', e => { if (hasFiles(e)){ e.preventDefault(); if (!e.target.closest || !e.target.closest('.dz')) e.dataTransfer.dropEffect = 'none'; else e.dataTransfer.dropEffect = 'copy'; } });
+window.addEventListener('drop', e => { if (hasFiles(e)) e.preventDefault(); });
+function wireDrop(zone, input, wantsText){
+  let depth = 0;
+  const status = zone.querySelector('.dzs');
+  zone.addEventListener('dragenter', e => { if (hasFiles(e)){ depth++; zone.classList.add('over'); } });
+  zone.addEventListener('dragleave', () => { depth = Math.max(0, depth - 1); if (!depth) zone.classList.remove('over'); });
+  zone.addEventListener('drop', e => {
+    depth = 0; zone.classList.remove('over');
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    const f = e.dataTransfer.files[0]; if (!f) return;
+    const isText = /\.txt$/i.test(f.name) || f.type === 'text/plain';
+    if (isText !== wantsText){
+      toast(wantsText ? 'That is not a text file. Drop your MP3 in the box above.' : 'That is a text file. Drop it in the chapters box below.');
+      return;
+    }
+    giveFile(input, f);
+    status.textContent = 'Received: ' + f.name;
+  });
+}
+wireDrop($('#dzBook'), $('#file'), false);
+wireDrop($('#dzSet'), $('#setFile'), true);
+
+/* ---------- check what kind of file was saved ---------- */
+async function sniff(blob){
+  const h = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+  const a = String.fromCharCode(...h);
+  const size = blob.size;
+  if (size < 4096 && /^\s*</.test(a)) return { kind: 'html', size };
+  if (size < 4096) return { kind: 'tiny', size };
+  if (a.startsWith('ID3') || (h[0] === 0xFF && (h[1] & 0xE0) === 0xE0)) return { kind: 'mp3', mime: 'audio/mpeg', size };
+  if (a.slice(4, 8) === 'ftyp'){
+    const brand = a.slice(8, 12);
+    if (brand.startsWith('aax')) return { kind: 'aax', size };
+    return { kind: 'mp4', mime: 'audio/mp4', size };
+  }
+  if (a.startsWith('RIFF')) return { kind: 'wav', mime: 'audio/wav', size };
+  if (a.startsWith('OggS')) return { kind: 'ogg', mime: 'audio/ogg', size };
+  if (a.startsWith('fLaC')) return { kind: 'flac', mime: 'audio/flac', size };
+  if (/^\s*</.test(a)) return { kind: 'html', size };
+  return { kind: 'unknown', size };
+}
+function badFileMessage(info){
+  const mb = (info.size / 1048576).toFixed(1) + ' MB';
+  if (info.kind === 'html') return `This saved file is a web page, not audio (${mb}). Google Drive often does this with big files. Download it again and choose "Download anyway", then add the book again.`;
+  if (info.kind === 'tiny') return `This file is only ${mb}, so it is not a full audiobook. The download probably did not finish. Download it again and add the book again.`;
+  if (info.kind === 'aax') return 'This is an Audible AAX file. It is protected and cannot be played in a browser. You need the MP3 version.';
+  return `This file format is not recognised (${mb}). Check that it is a real MP3 and add the book again.`;
+}
+
+/* ---------- player ---------- */
+async function openBook(id){
+  const b = state.books.find(x => x.id === id); if (!b) return;
+  let blob = await tx('files','readonly', s => s.get(id));
+  if (!blob){ toast('The file for this book is missing. Delete it and add it again.'); return; }
+  const info = await sniff(blob);
+  if (['html','tiny','aax','unknown'].includes(info.kind)){
+    toast(badFileMessage(info));
+    return;
+  }
+  if (info.mime && blob.type !== info.mime) blob = new Blob([blob], { type: info.mime });
+  closeBook(false);
+  state.info = info;
+  state.cur = b; state.ready = false; state.lastCh = -2; state.delArmed = false; state.lastT = null;
+  if (b.maxPos == null) b.maxPos = b.position || 0;
+  $('#delBtn').textContent = 'Delete book';
+  state.url = URL.createObjectURL(blob);
+  audio.src = state.url;
+  audio.onloadedmetadata = () => {
+    updateDone();
+    audio.currentTime = Math.min(b.position || 0, audio.duration || 0);
+    audio.playbackRate = b.speed || 1;
+    state.ready = true; state.lastT = audio.currentTime;
+    if (!b.duration || Math.abs(b.duration - audio.duration) > 1){ b.duration = audio.duration; saveBook(b); }
+    renderTicks(); tick();
+  };
+  $('#bkTitle').textContent = b.title;
+  setSpeed(b.speed || 1, false);
+  $('#editor').hidden = true; $('#editBtn').textContent = 'Edit chapters';
+  renderChapters(); setPlayLabel(); tick();
+  show('playView');
+  setupMediaSession();
+}
+function closeBook(goLibrary){
+  if (state.cur){ persist(true); }
+  state.ready = false;
+  audio.pause();
+  if (state.url){ URL.revokeObjectURL(state.url); state.url = null; }
+  audio.removeAttribute('src'); audio.load();
+  clearTimeout(state.sleepTimer); $('#sleep').value = '0';
+  state.cur = null;
+  if (goLibrary){ renderLibrary(); showUsage(); show('libView'); }
+}
+function persist(force){
+  const b = state.cur; if (!b || !state.ready) return;
+  const now = Date.now();
+  if (!force && now - state.lastSave < 5000) return;
+  state.lastSave = now;
+  if (isFinite(audio.currentTime)) b.position = audio.currentTime;
+  b.lastPlayed = now;
+  saveBook(b).catch(() => {});
+}
+function chapterIndex(t){
+  const c = state.cur.chapters; let idx = -1;
+  for (let i = 0; i < c.length; i++){ if (c[i].t <= t + 0.25) idx = i; else break; }
+  return idx;
+}
+function renderTicks(){
+  const box = $('#ticks'); box.innerHTML = '';
+  const d = audio.duration; if (!state.cur || !d) return;
+  const mk = (pct, cls) => { const el = document.createElement('b'); if (cls) el.className = cls; el.style.left = pct + '%'; box.append(el); };
+  mk(0, 'edge');
+  for (const c of state.cur.chapters){
+    if (c.t <= 0 || c.t >= d) continue;
+    mk(c.t / d * 100);
+  }
+  mk(100, 'edge end');
+}
+function chapLabel(name){ return /^chapter\b/i.test(name) ? name : 'Chapter: ' + name; }
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function isDone(i){
+  const b = state.cur, c = b.chapters[i];
+  const man = (b.manual || {})[c.t];
+  if (man === 'done') return true;
+  if (man === 'undone') return false;
+  const d = audio.duration || b.duration || 0;
+  const end = i + 1 < b.chapters.length ? b.chapters[i+1].t : Math.max(d - 5, c.t + 1);
+  return (b.maxPos || 0) >= end - 2;
+}
+function updateDone(){
+  if (!state.cur) return;
+  const items = document.querySelectorAll('#chlist li[data-i]');
+  let n = 0;
+  items.forEach(li => {
+    const i = +li.dataset.i, d = isDone(i);
+    li.classList.toggle('done', d);
+    li.querySelector('.chk').setAttribute('aria-pressed', d ? 'true' : 'false');
+    li.querySelector('.chk').setAttribute('aria-label', d ? 'Finished. Tap to mark as not finished' : 'Tap to mark as finished');
+    if (d) n++;
+  });
+  const total = state.cur.chapters.length;
+  $('#doneCount').textContent = total ? `${n} of ${total} chapters finished` : '';
+}
+function renderChapters(){
+  const ul = $('#chlist'); ul.innerHTML = '';
+  const c = state.cur.chapters;
+  if (!c.length){ ul.innerHTML = '<li class="hint">No chapters yet. Tap Edit chapters to add them.</li>'; $('#doneCount').textContent = ''; return; }
+  c.forEach((ch, i) => {
+    const li = document.createElement('li'); li.dataset.i = i;
+    li.innerHTML = `<button class="chk" type="button"><i>${CHECK}</i></button><button class="chb" type="button" data-i="${i}"><span class="cn">${esc(ch.name)}</span><span class="ct">${fmt(ch.t)}</span></button>`;
+    li.querySelector('.chb').onclick = () => { audio.currentTime = ch.t; audio.play().catch(() => {}); };
+    li.querySelector('.chk').onclick = () => {
+      const b = state.cur; b.manual = b.manual || {};
+      b.manual[ch.t] = isDone(i) ? 'undone' : 'done';
+      saveBook(b); updateDone();
+    };
+    ul.append(li);
+  });
+  state.lastCh = -2; markChapter(); updateDone();
+}
+function markChapter(){
+  if (!state.cur) return;
+  const i = chapterIndex(audio.currentTime || 0);
+  if (i === state.lastCh) return;
+  state.lastCh = i;
+  document.querySelectorAll('#chlist li[data-i]').forEach(el => el.classList.toggle('on', +el.dataset.i === i));
+  const c0 = state.cur.chapters;
+  const name = i >= 0 ? c0[i].name : (c0.length ? c0[0].name : '');
+  $('#chNow').textContent = name ? chapLabel(name) : 'No chapters yet';
+  const on = document.querySelector('#chlist li.on');
+  if (on && on.scrollIntoView && !audio.paused) on.scrollIntoView({block:'nearest'});
+  updateDone();
+}
+function tick(){
+  if (!state.cur) return;
+  const d = audio.duration || state.cur.duration || 0, t = audio.currentTime || 0;
+  const seek = $('#seek');
+  seek.max = Math.floor(d) || 100; seek.value = Math.floor(t);
+  seek.style.setProperty('--p', (d ? t / d * 100 : 0) + '%');
+  $('#tCur').textContent = fmt(t);
+  $('#tLeft').textContent = d ? '-' + fmt(d - t) + ' left' : '';
+  markChapter();
+}
+function setPlayLabel(){
+  const p = $('#play'); const playing = !audio.paused;
+  p.innerHTML = playing ? ICON.pause : ICON.play; p.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+}
+async function toggle(){
+  if (!audio.paused){ audio.pause(); return; }
+  try{
+    await audio.play();
+  } catch(e){
+    if (e.name === 'NotSupportedError') toast('This browser cannot play this file' + (state.info ? ` (${state.info.kind.toUpperCase()}, ${(state.info.size/1048576).toFixed(0)} MB)` : '') + '. Try Chrome on a computer, or convert the file to a standard MP3.');
+    else if (e.name !== 'AbortError') toast('Could not start playback (' + (e.name || 'error') + '). Go back to the library and open the book again.');
+  }
+}
+audio.addEventListener('error', () => {
+  if (state.cur && audio.getAttribute('src')) toast('This file cannot be played in this browser' + (audio.error ? ' (error ' + audio.error.code + ')' : '') + '.');
+});
+function jumpChapter(dir){
+  const c = state.cur.chapters; if (!c.length){ audio.currentTime += dir * 30; return; }
+  const i = chapterIndex(audio.currentTime);
+  if (dir > 0){ if (i + 1 < c.length) audio.currentTime = c[i+1].t; }
+  else { audio.currentTime = (i >= 0 && audio.currentTime - c[i].t > 3) ? c[i].t : (i > 0 ? c[i-1].t : 0); }
+}
+
+audio.addEventListener('timeupdate', () => {
+  const b = state.cur;
+  if (b && state.ready){
+    const t = audio.currentTime, prev = state.lastT;
+    if (prev != null && t >= prev && t - prev <= 3 && t > (b.maxPos || 0)) b.maxPos = t;
+    state.lastT = t;
+  }
+  tick(); persist(false);
+});
+audio.addEventListener('play', setPlayLabel);
+audio.addEventListener('pause', () => { setPlayLabel(); persist(true); });
+audio.addEventListener('ended', () => { setPlayLabel(); persist(true); toast('Finished. You can delete this book to free space.'); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) persist(true); });
+window.addEventListener('pagehide', () => persist(true));
+
+$('#play').onclick = toggle;
+$('#back15').onclick = () => { audio.currentTime = Math.max(0, audio.currentTime - 15); };
+$('#fwd30').onclick = () => { audio.currentTime = Math.min(audio.duration || 1e9, audio.currentTime + 30); };
+$('#prevCh').onclick = () => jumpChapter(-1);
+$('#nextCh').onclick = () => jumpChapter(1);
+$('#seek').oninput = e => { audio.currentTime = +e.target.value; tick(); };
+function setSpeed(v, save){
+  v = Math.round(Math.min(2, Math.max(0.75, v)) * 20) / 20;
+  audio.playbackRate = v;
+  $('#spVal').textContent = v.toFixed(2) + 'x';
+  if (state.cur){ state.cur.speed = v; if (save !== false) saveBook(state.cur); }
+}
+$('#spDown').onclick = () => setSpeed((state.cur.speed || 1) - 0.05);
+$('#spUp').onclick = () => setSpeed((state.cur.speed || 1) + 0.05);
+$('#sleep').onchange = e => {
+  clearTimeout(state.sleepTimer);
+  const m = +e.target.value;
+  if (m){ state.sleepTimer = setTimeout(() => { audio.pause(); $('#sleep').value = '0'; toast('Sleep timer ended.'); }, m * 60000); toast(`Will pause in ${m} minutes.`); }
+};
+$('#playBack').onclick = () => closeBook(true);
+document.addEventListener('keydown', e => {
+  if (!state.cur || $('#playView').hidden) return;
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+  if (e.code === 'Space'){ e.preventDefault(); toggle(); }
+  if (e.code === 'ArrowLeft') $('#back15').click();
+  if (e.code === 'ArrowRight') $('#fwd30').click();
+});
+
+/* delete: tap twice */
+$('#delBtn').onclick = async () => {
+  const btn = $('#delBtn');
+  if (!state.delArmed){
+    state.delArmed = true; btn.textContent = 'Tap to confirm';
+    setTimeout(() => { state.delArmed = false; if (state.cur) btn.textContent = 'Delete book'; }, 4000);
+    return;
+  }
+  const id = state.cur.id;
+  closeBook(false);
+  try{
+    await tx('files','readwrite', s => s.delete(id));
+    await tx('books','readwrite', s => s.delete(id));
+    state.books = state.books.filter(b => b.id !== id);
+    toast('Book deleted from the tool. To free all the space, also delete the downloaded MP3 from your Downloads folder.', 8000);
+    setTimeout(showUsage, 1500);
+  } catch(e){ toast('Could not delete. Try again.'); }
+  renderLibrary(); showUsage(); show('libView');
+};
+
+/* chapter editor */
+$('#editBtn').onclick = () => {
+  const ed = $('#editor'); ed.hidden = !ed.hidden;
+  $('#editBtn').textContent = ed.hidden ? 'Edit chapters' : 'Close editor';
+  if (!ed.hidden) $('#chText').value = state.cur.chapters.map(c => `${fmtFull(c.t)} ${c.name}`).join('\n');
+};
+$('#chHere').onclick = () => {
+  const ta = $('#chText');
+  ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/,'') + '\n' : '') + `${fmtFull(audio.currentTime)} New chapter`;
+  ta.focus();
+};
+$('#chSave').onclick = async () => {
+  const out = [];
+  for (const line of $('#chText').value.split('\n')){
+    const m = line.match(/^\s*(\d+(?::\d{1,2}){1,2})(?:\.\d+)?\s*[-:\u2013\u2014]?\s*(.*)$/);
+    if (!m) continue;
+    const t = parseTime(m[1]); if (t === null) continue;
+    out.push({ t, name: m[2].trim() || 'Chapter' });
+  }
+  out.sort((a,b) => a.t - b.t);
+  state.cur.chapters = out;
+  await saveBook(state.cur);
+  renderChapters(); renderTicks(); tick();
+  $('#editor').hidden = true; $('#editBtn').textContent = 'Edit chapters';
+  toast(out.length ? `Saved ${out.length} chapters.` : 'Chapters cleared.');
+};
+$('#chRead').onclick = async () => {
+  const blob = await tx('files','readonly', s => s.get(state.cur.id));
+  let found = blob ? await readChapters(blob) : [];
+  if (!found.length){ const m = await findSet(state.cur.title); if (m) found = m.chapters; }
+  if (!found.length){ toast('No chapters in the file or in your chapter lists for this title.'); return; }
+  $('#chText').value = found.map(c => `${fmtFull(c.t)} ${c.name}`).join('\n');
+  toast(`Found ${found.length} chapters. Tap Save chapters to keep them.`);
+};
+
+/* lock screen controls */
+function setupMediaSession(){
+  if (!('mediaSession' in navigator)) return;
+  try{
+    navigator.mediaSession.metadata = new MediaMetadata({ title: state.cur.title, artist: 'My audiobooks' });
+    navigator.mediaSession.setActionHandler('play', () => audio.play());
+    navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+    navigator.mediaSession.setActionHandler('seekbackward', () => $('#back15').click());
+    navigator.mediaSession.setActionHandler('seekforward', () => $('#fwd30').click());
+    navigator.mediaSession.setActionHandler('previoustrack', () => jumpChapter(-1));
+    navigator.mediaSession.setActionHandler('nexttrack', () => jumpChapter(1));
+  } catch(e){}
+}
+
+/* start */
+(async () => {
+  try{
+    db = await openDB();
+    state.books = await tx('books','readonly', s => s.getAll());
+    renderLibrary(); showUsage(); showSetsInfo();
+  } catch(e){
+    $('#list').innerHTML = '<p class="empty">This browser is blocking local storage, so books cannot be saved. Try a normal (not private) window.</p>';
+    $('#addBtn').disabled = true;
+  }
+})();
+</script>
+</body>
+</html>
