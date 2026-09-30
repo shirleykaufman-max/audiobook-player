@@ -90,6 +90,9 @@ a.linkbtn{display:inline-flex;align-items:center;text-decoration:none}
 #playView .top .btn{padding:8px 14px}
 .bktop{margin:0;font-size:19px;line-height:1.25;font-weight:700;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .now{margin-bottom:6px}
+.nowrow{display:flex;align-items:center;gap:14px}
+.nowrow .now{flex:1;min-width:0}
+.pcov{width:84px;height:84px;flex:0 0 84px;border-radius:12px;object-fit:cover;box-shadow:var(--shadow)}
 .seekwrap{position:relative;height:40px;margin:10px 0 0}
 .ticks{position:absolute;left:0;right:0;top:50%;height:30px;transform:translateY(-50%);pointer-events:none;z-index:1}
 .ticks b{position:absolute;top:50%;transform:translateY(-50%);width:2px;height:16px;margin-left:-1px;background:var(--tick);border-radius:1px}
@@ -223,7 +226,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
     <button class="btn danger" id="delBtn">Delete book</button>
   </div>
   <div class="card">
-  <h2 class="now" id="chNow"></h2>
+  <div class="nowrow"><img id="pCover" class="pcov" alt="" hidden><h2 class="now" id="chNow"></h2></div>
 
   <div class="seekwrap">
     <div class="ticks" id="ticks"></div>
@@ -282,7 +285,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
 <script>
 const $ = s => document.querySelector(s);
 const audio = $('#audio');
-const state = { books: [], cur: null, url: null, lastSave: 0, sleepTimer: null, lastCh: -2, delArmed: false };
+const state = { covers: {}, books: [], cur: null, url: null, lastSave: 0, sleepTimer: null, lastCh: -2, delArmed: false };
 
 /* ---------- icons ---------- */
 const SVG = d => `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${d}</svg>`;
@@ -331,12 +334,13 @@ function show(id){
 let db = null;
 function openDB(){
   return new Promise((res, rej) => {
-    const r = indexedDB.open('audiobooks', 2);
+    const r = indexedDB.open('audiobooks', 3);
     r.onupgradeneeded = () => {
       const d = r.result;
       if (!d.objectStoreNames.contains('books')) d.createObjectStore('books', {keyPath:'id'});
       if (!d.objectStoreNames.contains('files')) d.createObjectStore('files');
       if (!d.objectStoreNames.contains('sets')) d.createObjectStore('sets');
+      if (!d.objectStoreNames.contains('covers')) d.createObjectStore('covers');
     };
     r.onsuccess = () => res(r.result);
     r.onerror = () => rej(r.error);
@@ -402,6 +406,76 @@ async function readChapters(file){
     chaps.sort((a,b) => a.t - b.t);
     return chaps;
   } catch(e){ return []; }
+}
+
+/* ---------- cover picture inside the MP3 (ID3 APIC) ---------- */
+async function shrinkImage(blob){
+  const bmp = await createImageBitmap(blob);
+  const sc = Math.min(1, 480 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(bmp.width * sc)); c.height = Math.max(1, Math.round(bmp.height * sc));
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('no image')), 'image/jpeg', 0.88));
+}
+async function readCover(file){
+  try{
+    const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+    if (String.fromCharCode(head[0], head[1], head[2]) !== 'ID3') return null;
+    const ver = head[3], flags = head[5], size = synch(head, 6);
+    if (ver < 3) return null;
+    const buf = new Uint8Array(await file.slice(0, 10 + size).arrayBuffer());
+    const dv = new DataView(buf.buffer);
+    let p = 10;
+    if (flags & 0x40) p += (ver === 4 ? synch(buf, p) : dv.getUint32(p) + 4);
+    let best = null;
+    for (const f of frames(buf, p, 10 + size, ver)){
+      if (f.id !== 'APIC') continue;
+      const d = f.data, enc = d[0]; let i = 1;
+      while (i < d.length && d[i] !== 0) i++;
+      const mime = String.fromCharCode(...d.subarray(1, i)); i++;
+      const type = d[i]; i++;
+      if (enc === 1 || enc === 2){ while (i + 1 < d.length && !(d[i] === 0 && d[i+1] === 0)) i += 2; i += 2; }
+      else { while (i < d.length && d[i] !== 0) i++; i++; }
+      const img = d.subarray(i);
+      if (img.length < 100) continue;
+      if (!best || type === 3) best = { img, mime };
+      if (type === 3) break;
+    }
+    if (!best) return null;
+    const b0 = best.img; let mime = best.mime;
+    if (b0[0] === 0xFF && b0[1] === 0xD8) mime = 'image/jpeg';
+    else if (b0[0] === 0x89 && b0[1] === 0x50) mime = 'image/png';
+    else if (!/^image\//.test(mime)) return null;
+    let blob = new Blob([b0], { type: mime });
+    try{ blob = await shrinkImage(blob); } catch(e){}
+    return blob;
+  } catch(e){ return null; }
+}
+async function loadCovers(){
+  for (const b of state.books){
+    if (state.covers[b.id]) continue;
+    try{
+      const blob = await tx('covers','readonly', s => s.get(b.id));
+      if (blob) state.covers[b.id] = URL.createObjectURL(blob);
+    } catch(e){}
+  }
+}
+async function ensureCovers(){
+  let changed = false;
+  for (const b of state.books){
+    if (b.coverChecked || state.covers[b.id]) continue;
+    try{
+      const file = await tx('files','readonly', s => s.get(b.id));
+      const cv = file ? await readCover(file) : null;
+      if (cv){ await tx('covers','readwrite', s => s.put(cv, b.id)); state.covers[b.id] = URL.createObjectURL(cv); changed = true; }
+      b.coverChecked = true; await saveBook(b);
+    } catch(e){}
+  }
+  if (changed){ renderLibrary(); if (state.cur) setPlayerCover(state.cur.id); }
+}
+function setPlayerCover(id){
+  const img = $('#pCover'), u = state.covers[id];
+  if (u){ img.src = u; img.hidden = false; } else { img.removeAttribute('src'); img.hidden = true; }
 }
 
 /* ---------- chapter lists (known in advance) ---------- */
@@ -495,7 +569,7 @@ function renderLibrary(){
     const el = document.createElement('button');
     el.className = 'book';
     const chapters = b.chapters.length ? `${b.chapters.length} chapters` : 'No chapters yet';
-    el.innerHTML = `<div class="cov">${ICON.book}</div><div class="binfo"><div class="bt">${esc(b.title)}</div><div class="bm">${pct}% listened, ${chapters}${b.position ? ', resume at ' + fmt(b.position) : ''}</div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+    el.innerHTML = `<div class="cov">${state.covers[b.id] ? `<img alt="" src="${state.covers[b.id]}">` : ICON.book}</div><div class="binfo"><div class="bt">${esc(b.title)}</div><div class="bm">${pct}% listened, ${chapters}${b.position ? ', resume at ' + fmt(b.position) : ''}</div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
     el.onclick = () => openBook(b.id);
     box.append(el);
   }
@@ -550,10 +624,12 @@ $('#saveBtn').onclick = async () => {
       const m = await findSet(title0);
       if (m){ chapters = m.chapters; fromList = true; }
     }
+    const cover = await readCover(f);
     const id = 'b' + Date.now();
     const b = { id, title: $('#title').value.trim() || f.name.replace(/\.[^.]+$/, ''), chapters,
-                position: 0, speed: 1, duration: 0, added: Date.now(), lastPlayed: 0, source: $('#link').value.trim() };
+                position: 0, speed: 1, duration: 0, added: Date.now(), lastPlayed: 0, source: $('#link').value.trim(), coverChecked: true };
     await tx('files','readwrite', s => s.put(f, id));
+    if (cover){ await tx('covers','readwrite', s => s.put(cover, id)); state.covers[id] = URL.createObjectURL(cover); }
     await saveBook(b);
     state.books.push(b);
     renderLibrary(); showUsage();
@@ -652,6 +728,7 @@ async function openBook(id){
     renderTicks(); tick();
   };
   $('#bkTitle').textContent = b.title;
+  setPlayerCover(b.id);
   setSpeed(b.speed || 1, false);
   $('#editor').hidden = true; $('#editBtn').textContent = 'Edit chapters';
   renderChapters(); setPlayLabel(); tick();
@@ -837,6 +914,8 @@ $('#delBtn').onclick = async () => {
   try{
     await tx('files','readwrite', s => s.delete(id));
     await tx('books','readwrite', s => s.delete(id));
+    await tx('covers','readwrite', s => s.delete(id));
+    if (state.covers[id]){ URL.revokeObjectURL(state.covers[id]); delete state.covers[id]; }
     state.books = state.books.filter(b => b.id !== id);
     toast('Book deleted from the tool. To free all the space, also delete the downloaded MP3 from your Downloads folder.', 8000);
     setTimeout(showUsage, 1500);
@@ -883,7 +962,8 @@ $('#chRead').onclick = async () => {
 function setupMediaSession(){
   if (!('mediaSession' in navigator)) return;
   try{
-    navigator.mediaSession.metadata = new MediaMetadata({ title: state.cur.title, artist: 'My audiobooks' });
+    const art = state.covers[state.cur.id] ? [{ src: state.covers[state.cur.id], sizes: '480x480', type: 'image/jpeg' }] : [];
+    navigator.mediaSession.metadata = new MediaMetadata({ title: state.cur.title, artist: 'My audiobooks', artwork: art });
     navigator.mediaSession.setActionHandler('play', () => audio.play());
     navigator.mediaSession.setActionHandler('pause', () => audio.pause());
     navigator.mediaSession.setActionHandler('seekbackward', () => $('#back15').click());
@@ -898,7 +978,9 @@ function setupMediaSession(){
   try{
     db = await openDB();
     state.books = await tx('books','readonly', s => s.getAll());
+    await loadCovers();
     renderLibrary(); showUsage(); showSetsInfo();
+    ensureCovers();
   } catch(e){
     $('#list').innerHTML = '<p class="empty">This browser is blocking local storage, so books cannot be saved. Try a normal (not private) window.</p>';
     $('#addBtn').disabled = true;
