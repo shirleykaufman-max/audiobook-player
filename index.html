@@ -262,6 +262,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
     <button class="btn ghost" id="editBtn">Edit chapters</button>
   </div>
   <p class="sub" id="doneCount"></p>
+  <p class="capt" style="text-align:left;margin:-6px 2px 12px">A chapter is marked finished when you have listened to almost all of it. To mark one yourself, tap its circle.</p>
   <ul id="chlist"></ul>
 
   <div id="editor" class="card" hidden style="margin-top:14px">
@@ -715,7 +716,6 @@ async function openBook(id){
   closeBook(false);
   state.info = info;
   state.cur = b; state.ready = false; state.lastCh = -2; state.delArmed = false; state.lastT = null;
-  if (b.maxPos == null) b.maxPos = b.position || 0;
   $('#delBtn').textContent = 'Delete book';
   state.url = URL.createObjectURL(blob);
   audio.src = state.url;
@@ -778,8 +778,10 @@ function isDone(i){
   if (man === 'done') return true;
   if (man === 'undone') return false;
   const d = audio.duration || b.duration || 0;
-  const end = i + 1 < b.chapters.length ? b.chapters[i+1].t : Math.max(d - 5, c.t + 1);
-  return (b.maxPos || 0) >= end - 2;
+  const end = i + 1 < b.chapters.length ? b.chapters[i+1].t : d;
+  const len = end - c.t;
+  if (!(len > 0)) return false;
+  return ((b.listened || {})[c.t] || 0) >= len * 0.9;
 }
 function updateDone(){
   if (!state.cur) return;
@@ -862,14 +864,23 @@ audio.addEventListener('timeupdate', () => {
   const b = state.cur;
   if (b && state.ready){
     const t = audio.currentTime, prev = state.lastT;
-    if (prev != null && t >= prev && t - prev <= 3 && t > (b.maxPos || 0)) b.maxPos = t;
+    if (prev != null && t >= prev && t - prev <= 3 && b.chapters.length){
+      const i = chapterIndex(prev);
+      if (i >= 0){
+        b.listened = b.listened || {};
+        const key = b.chapters[i].t;
+        b.listened[key] = (b.listened[key] || 0) + (t - prev);
+      }
+    }
     state.lastT = t;
+    const now = Date.now();
+    if (now - (state.lastDone || 0) > 5000){ state.lastDone = now; updateDone(); }
   }
   tick(); persist(false);
 });
 audio.addEventListener('play', setPlayLabel);
 audio.addEventListener('pause', () => { setPlayLabel(); persist(true); });
-audio.addEventListener('ended', () => { setPlayLabel(); persist(true); toast('Finished. You can delete this book to free space.'); });
+audio.addEventListener('ended', () => { setPlayLabel(); persist(true); updateDone(); toast('Finished. You can delete this book to free space.'); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) persist(true); });
 window.addEventListener('pagehide', () => persist(true));
 
