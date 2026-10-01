@@ -253,8 +253,8 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
   <div class="field">
     <label for="link">Step 1. Paste the Google Drive link</label>
     <input type="url" id="link" placeholder="https://drive.google.com/file/d/...">
-    <div style="margin-top:10px"><a class="btn ghost linkbtn" id="dl" href="#" target="_blank" rel="noopener" hidden>Download this file</a></div>
-    <small>Tap Download and wait for it to finish. Big files may show a Google warning: choose Download anyway.</small>
+    <div class="row" style="margin-top:10px"><a class="btn linkbtn" id="dl" href="#" target="_blank" rel="noopener" hidden>Download this file</a><a class="btn ghost linkbtn" id="dl2" href="#" target="_blank" rel="noopener" hidden>Other download link</a></div>
+    <small>Tap Download and wait for it to finish. If the Drive app opens instead, or nothing downloads, tap Other download link. Big files may show a Google warning: choose Download anyway.</small>
   </div>
 
   <div class="field">
@@ -596,7 +596,7 @@ $('#setLink').oninput = () => {
   if (id){
     a.href = /docs\.google\.com\/document/.test(url)
       ? `https://docs.google.com/document/d/${id}/export?format=txt`
-      : `https://drive.google.com/uc?export=download&id=${id}`;
+      : `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`;
     a.hidden = false;
   } else a.hidden = true;
 };
@@ -657,7 +657,7 @@ function driveId(url){
 }
 $('#addBtn').onclick = () => {
   $('#link').value = ''; $('#file').value = ''; $('#title').value = ''; $('#addMsg').textContent = 'Choose the MP3 to enable Save book.';
-  $('#dl').hidden = true; $('#saveBtn').disabled = true;
+  $('#dl').hidden = true; $('#dl2').hidden = true; $('#saveBtn').disabled = true;
   document.querySelectorAll('.dzs').forEach(x => x.textContent = '');
   $('#setPreview').hidden = true; $('#setPreview').innerHTML = '';
   $('#setLink').value = ''; $('#setDl').hidden = true; $('#setFile').value = ''; showSetsInfo();
@@ -667,8 +667,12 @@ $('#addBack').onclick = () => show('libView');
 $('#link').oninput = () => {
   const id = driveId($('#link').value.trim());
   const a = $('#dl');
-  if (id){ a.href = `https://drive.google.com/uc?export=download&id=${id}`; a.hidden = false; }
-  else a.hidden = true;
+  const a2 = $('#dl2');
+  if (id){
+    a.href = `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`;
+    a2.href = `https://drive.google.com/uc?export=download&id=${id}`;
+    a.hidden = false; a2.hidden = false;
+  } else { a.hidden = true; a2.hidden = true; }
 };
 $('#file').onchange = () => {
   const f = $('#file').files[0];
