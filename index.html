@@ -272,8 +272,11 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
     <label for="setLink">Chapters file (optional)</label>
     <p class="sub" id="setsInfo" style="margin:0 0 12px;font-size:15px"></p>
     <input type="url" id="setLink" placeholder="Paste the Drive link of your chapters file">
-    <div style="margin-top:10px"><a class="btn ghost linkbtn" id="setDl" href="#" target="_blank" rel="noopener" hidden>Download chapters file</a></div>
+    <div class="row" style="margin-top:10px"><a class="btn linkbtn" id="setDl" href="#" target="_blank" rel="noopener" hidden>Download chapters file</a><a class="btn ghost linkbtn" id="setDl2" href="#" target="_blank" rel="noopener" hidden>Other download link</a></div>
     <div class="dz" id="dzSet" style="margin-top:12px"><span class="dzt">Drag the chapters .txt file here, or</span><input type="file" id="setFile" accept=".txt,text/plain"><span class="dzs"></span></div>
+    <div style="margin-top:16px"><label for="setPaste">Or paste your chapters here (easiest on a phone)</label>
+      <textarea id="setPaste" spellcheck="false" placeholder="# Book title&#10;0:00:00 Opening credits&#10;0:12:30 Chapter 1" style="min-height:140px"></textarea>
+      <div style="margin-top:10px"><button class="btn" id="pasteBtn" type="button">Load pasted chapters</button></div></div>
     <div id="setPreview" hidden></div>
     <small>Plain text file. Each book starts with a line like # Book title, followed by lines like 0:12:30 Chapter name. Load it once and the tool remembers it.</small>
   </div>
@@ -592,19 +595,31 @@ async function showSetsInfo(){
   } catch(e){}
 }
 $('#setLink').oninput = () => {
-  const url = $('#setLink').value.trim(), id = driveId(url), a = $('#setDl');
-  if (id){
-    a.href = /docs\.google\.com\/document/.test(url)
-      ? `https://docs.google.com/document/d/${id}/export?format=txt`
-      : `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`;
-    a.hidden = false;
-  } else a.hidden = true;
+  const url = $('#setLink').value.trim(), id = driveId(url), a = $('#setDl'), a2 = $('#setDl2');
+  if (!id){ a.hidden = true; a2.hidden = true; return; }
+  if (/docs\.google\.com\/document/.test(url)){
+    a.href = `https://docs.google.com/document/d/${id}/export?format=txt`;
+    a2.href = `https://docs.google.com/feeds/download/documents/export/Export?id=${id}&exportFormat=txt`;
+  } else {
+    a.href = `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`;
+    a2.href = `https://drive.google.com/uc?export=download&id=${id}`;
+  }
+  a.hidden = false; a2.hidden = false;
 };
 $('#setFile').onchange = async () => {
   const f = $('#setFile').files[0]; if (!f) return;
+  await importChapterText(await f.text(), f.name);
+};
+$('#pasteBtn').onclick = async () => {
+  const text = $('#setPaste').value;
+  if (!text.trim()){ toast('Paste your chapters first.'); return; }
+  if (!/^\s*#/m.test(text)){ toast('Start with a line like: # Book title'); return; }
+  if (await importChapterText(text, 'Pasted')) $('#setPaste').value = '';
+};
+async function importChapterText(text, fileName){
   try{
-    const sets = parseChapterFile(await f.text(), f.name);
-    if (!sets.length){ toast('No chapters found. Check the file format.'); return; }
+    const sets = parseChapterFile(text, fileName);
+    if (!sets.length){ toast('No chapters found. Check the format.'); return false; }
     for (const x of sets) await tx('sets','readwrite', s => s.put(x, norm(x.title)));
     let applied = 0;
     for (const b of state.books){
@@ -621,8 +636,9 @@ $('#setFile').onchange = async () => {
     if (z) z.textContent = 'Loaded: ' + sets.map(x => `${x.title} (${x.chapters.length} chapters)`).join(', ');
     renderLibrary(); showSetsInfo();
     toast(`Loaded chapters for ${sets.length} book${sets.length>1?'s':''}${applied ? `, added to ${applied} in your library` : ''}.`);
-  } catch(e){ toast('Could not read that file.'); }
-};
+    return true;
+  } catch(e){ toast('Could not read that text.'); return false; }
+}
 
 /* ---------- library ---------- */
 function renderLibrary(){
@@ -660,7 +676,7 @@ $('#addBtn').onclick = () => {
   $('#dl').hidden = true; $('#dl2').hidden = true; $('#saveBtn').disabled = true;
   document.querySelectorAll('.dzs').forEach(x => x.textContent = '');
   $('#setPreview').hidden = true; $('#setPreview').innerHTML = '';
-  $('#setLink').value = ''; $('#setDl').hidden = true; $('#setFile').value = ''; showSetsInfo();
+  $('#setLink').value = ''; $('#setDl').hidden = true; $('#setDl2').hidden = true; $('#setPaste').value = ''; $('#setFile').value = ''; showSetsInfo();
   show('addView');
 };
 $('#addBack').onclick = () => show('libView');
