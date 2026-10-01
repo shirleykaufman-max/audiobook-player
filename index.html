@@ -265,7 +265,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
 
   <div class="field">
     <label for="title">Book title</label>
-    <input type="text" id="title" placeholder="Filled in from the file name">
+    <input type="text" id="title" placeholder="Filled in from your chapters file or the file name">
   </div>
 
   <div class="field">
@@ -278,7 +278,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
       <textarea id="setPaste" spellcheck="false" placeholder="# Book title&#10;0:00:00 Opening credits&#10;0:12:30 Chapter 1" style="min-height:140px"></textarea>
       <div style="margin-top:10px"><button class="btn" id="pasteBtn" type="button">Load pasted chapters</button></div></div>
     <div id="setPreview" hidden></div>
-    <small>Plain text file. Each book starts with a line like # Book title, followed by lines like 0:12:30 Chapter name. Load it once and the tool remembers it.</small>
+    <small>Each book starts with a line like # Book title, followed by lines like 0:12:30 Chapter name. The tool takes the book title from this line. If you leave it out, it uses the Book title box above. Load it once and the tool remembers it.</small>
   </div>
 
   <button class="btn" id="saveBtn" disabled>Save book</button>
@@ -608,12 +608,32 @@ $('#setLink').oninput = () => {
 };
 $('#setFile').onchange = async () => {
   const f = $('#setFile').files[0]; if (!f) return;
-  await importChapterText(await f.text(), f.name);
+  let text = await f.text();
+  const t0 = $('#title').value.trim();
+  if (!/^\s*#/m.test(text) && t0) text = '# ' + t0 + '\n' + text;
+  await importChapterText(text, f.name);
 };
+let titleSource = null;
+$('#title').addEventListener('input', () => { titleSource = 'user'; });
+function applyTitleFromSets(sets){
+  if (titleSource === 'user') return;
+  const f = $('#file').files[0];
+  let pick = null;
+  if (f){
+    const n = norm(f.name.replace(/\.[^.]+$/, ''));
+    pick = sets.find(x => norm(x.title) === n) || sets.find(x => n.includes(norm(x.title)) || norm(x.title).includes(n));
+  }
+  if (!pick && sets.length === 1) pick = sets[0];
+  if (pick){ $('#title').value = pick.title; titleSource = 'sets'; }
+}
 $('#pasteBtn').onclick = async () => {
-  const text = $('#setPaste').value;
+  let text = $('#setPaste').value;
   if (!text.trim()){ toast('Paste your chapters first.'); return; }
-  if (!/^\s*#/m.test(text)){ toast('Start with a line like: # Book title'); return; }
+  if (!/^\s*#/m.test(text)){
+    const t0 = $('#title').value.trim();
+    if (!t0){ toast('Type the book title in the Book title box above first, or start your text with # Book title.', 6000); return; }
+    text = '# ' + t0 + '\n' + text;
+  }
   if (await importChapterText(text, 'Pasted')) $('#setPaste').value = '';
 };
 async function importChapterText(text, fileName){
@@ -634,6 +654,7 @@ async function importChapterText(text, fileName){
     pv.hidden = false;
     const z = document.querySelector('#dzSet .dzs');
     if (z) z.textContent = 'Loaded: ' + sets.map(x => `${x.title} (${x.chapters.length} chapters)`).join(', ');
+    if (!$('#addView').hidden) applyTitleFromSets(sets);
     renderLibrary(); showSetsInfo();
     toast(`Loaded chapters for ${sets.length} book${sets.length>1?'s':''}${applied ? `, added to ${applied} in your library` : ''}.`);
     return true;
@@ -672,7 +693,7 @@ function driveId(url){
   return m ? m[1] : null;
 }
 $('#addBtn').onclick = () => {
-  $('#link').value = ''; $('#file').value = ''; $('#title').value = ''; $('#addMsg').textContent = 'Choose the MP3 to enable Save book.';
+  $('#link').value = ''; $('#file').value = ''; $('#title').value = ''; titleSource = null; $('#addMsg').textContent = 'Choose the MP3 to enable Save book.';
   $('#dl').hidden = true; $('#dl2').hidden = true; $('#saveBtn').disabled = true;
   document.querySelectorAll('.dzs').forEach(x => x.textContent = '');
   $('#setPreview').hidden = true; $('#setPreview').innerHTML = '';
@@ -690,11 +711,16 @@ $('#link').oninput = () => {
     a.hidden = false; a2.hidden = false;
   } else { a.hidden = true; a2.hidden = true; }
 };
-$('#file').onchange = () => {
+$('#file').onchange = async () => {
   const f = $('#file').files[0];
   $('#saveBtn').disabled = !f;
   $('#addMsg').textContent = f ? '' : 'Choose the MP3 to enable Save book.';
-  if (f && !$('#title').value.trim()) $('#title').value = f.name.replace(/\.[^.]+$/, '');
+  if (f && titleSource !== 'user' && titleSource !== 'sets'){
+    const base = f.name.replace(/\.[^.]+$/, '');
+    const m = await findSet(base);
+    $('#title').value = m ? m.title : base;
+    titleSource = m ? 'sets' : 'file';
+  }
 };
 $('#saveBtn').onclick = async () => {
   const f = $('#file').files[0]; if (!f) return;
