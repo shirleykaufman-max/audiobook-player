@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>My Audiobooks</title>
+<meta name="theme-color" content="#6D5BF7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Audiobooks">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -225,7 +232,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
 <section id="libView">
   <h1>My audiobooks</h1>
   <p class="sub">Your books stay on this device. Nothing is uploaded.</p>
-  <div class="row" style="margin-bottom:16px"><button class="btn" id="addBtn">Add book</button></div>
+  <div class="row" style="margin-bottom:16px"><button class="btn" id="addBtn">Add book</button><button class="btn ghost fsBtn" type="button">Full screen</button></div>
 
   <div id="list"></div>
 
@@ -320,6 +327,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
         <span id="spVal" aria-live="polite">1.00x</span>
         <button id="spUp" aria-label="Faster">+</button>
       </div></div>
+    <div><label>Screen</label><button class="btn ghost fsBtn" type="button" style="width:100%">Full screen</button></div>
     <div><label for="sleep">Sleep timer</label>
       <select id="sleep">
         <option value="0">Off</option><option value="15">15 minutes</option><option value="30">30 minutes</option>
@@ -327,6 +335,9 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
       </select></div>
   </div>
 
+  <button class="btn ghost" id="chToggle" type="button" style="width:100%">Show chapters</button>
+
+  <div id="chWrap" hidden style="margin-top:16px">
   <div class="row spread">
     <h2>Chapters</h2>
     <button class="btn ghost" id="editBtn">Edit chapters</button>
@@ -346,6 +357,7 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
       <button class="btn ghost" id="chHere">Add a line at current time</button>
       <button class="btn ghost" id="chRead">Load saved chapters</button>
     </div>
+  </div>
   </div>
 </section>
 
@@ -844,7 +856,7 @@ async function openBook(id){
   setPlayerCover(b.id);
   setSpeed(b.speed || 1, false);
   $('#editor').hidden = true; $('#editBtn').textContent = 'Edit chapters';
-  renderChapters(); setPlayLabel(); tick();
+  renderChapters(); setChaptersShown(false); setPlayLabel(); tick();
   show('playView');
   setupMediaSession();
 }
@@ -1095,6 +1107,36 @@ function setupMediaSession(){
     navigator.mediaSession.setActionHandler('previoustrack', () => jumpChapter(-1));
     navigator.mediaSession.setActionHandler('nexttrack', () => jumpChapter(1));
   } catch(e){}
+}
+
+/* chapters: hidden until you ask for them */
+function setChaptersShown(show){
+  $('#chWrap').hidden = !show;
+  $('#chToggle').textContent = show ? 'Hide chapters' : 'Show chapters';
+  if (show){
+    const on = document.querySelector('#chlist li.on');
+    if (on && on.scrollIntoView) on.scrollIntoView({block:'center'});
+  }
+}
+$('#chToggle').onclick = () => setChaptersShown($('#chWrap').hidden);
+
+/* full screen (hides the browser address bar where the browser allows it) */
+function fsActive(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function updateFsLabels(){ document.querySelectorAll('.fsBtn').forEach(b => b.textContent = fsActive() ? 'Exit full screen' : 'Full screen'); }
+document.querySelectorAll('.fsBtn').forEach(btn => btn.onclick = async () => {
+  const d = document, el = d.documentElement;
+  if (fsActive()){ (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req){ toast('This browser cannot do full screen here. On iPhone: tap Share, then Add to Home Screen, and open the tool from that icon.', 9000); return; }
+  try{ await req.call(el); }
+  catch(e){ toast('Full screen was blocked here. Open the tool in Chrome from its own link, or install it to your home screen.', 8000); }
+});
+document.addEventListener('fullscreenchange', updateFsLabels);
+document.addEventListener('webkitfullscreenchange', updateFsLabels);
+
+/* works like an app when added to the home screen */
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
 /* start */
