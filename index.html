@@ -163,6 +163,23 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
 }
 @media (max-width:359px){ .opts{grid-template-columns:1fr} }
 @media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+/* bookmarks and notes */
+#bmPanel label{display:block;font-weight:600;margin:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 16px}
+.chip{border:2px solid var(--accent);background:var(--panel);color:var(--accent);border-radius:999px;padding:8px 16px;font-weight:600;font-size:16px;min-height:44px}
+.chip.on{background:var(--accent);color:var(--accent-ink)}
+.bmlist{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:12px}
+.bm{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+.bmtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-weight:700}
+.bmtop span.t{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bmch{color:var(--muted);font-weight:500;font-size:15px;margin:2px 0 0;overflow-wrap:anywhere}
+.bmtags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.tg{background:var(--soft);color:var(--accent);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600}
+.bmnote{margin:8px 0 10px;white-space:pre-wrap;overflow-wrap:anywhere}
+.bm .row{margin-top:10px}
+.bm .row .btn{min-height:46px;padding:8px 16px;font-size:16px}
+.emptybm{color:var(--muted);padding:6px 4px}
+
 /* bigger and easier to tap on phones */
 @media (max-width:700px){
   body{font-size:21px;line-height:1.5}
@@ -223,6 +240,14 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
   .hint,.msg{font-size:19px}
   .empty{font-size:20px}
 }
+@media (max-width:700px){
+  .chip{font-size:19px;min-height:54px;padding:10px 18px}
+  .tg{font-size:16px}
+  .bmch{font-size:17px}
+  .bmtop{font-size:20px}
+  .bm .row .btn{min-height:54px;font-size:18px;padding:8px 18px}
+  #bmPanel label{font-size:20px}
+}
 </style>
 </head>
 <body>
@@ -235,6 +260,15 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
   <div class="row" style="margin-bottom:16px"><button class="btn" id="addBtn">Add book</button><button class="btn ghost fsBtn" type="button">Full screen</button></div>
 
   <div id="list"></div>
+
+  <div id="allNotes" hidden style="margin-top:8px">
+    <h2 style="margin-bottom:10px">Notes from all books</h2>
+    <div class="row">
+      <button class="btn" id="allCopy" type="button">Copy all notes</button>
+      <button class="btn ghost" id="allTxt" type="button">Save as text</button>
+      <button class="btn ghost" id="allCsv" type="button">Save as Excel (CSV)</button>
+    </div>
+  </div>
 
   <p class="foot" id="usage"></p>
 
@@ -317,7 +351,30 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
     <button id="prevCh" class="chbtn" aria-label="Previous chapter"></button>
     <button id="nextCh" class="chbtn" aria-label="Next chapter"></button>
   </div>
+  <button class="btn" id="bmAdd" type="button" style="width:100%;margin-top:14px">Bookmark this place</button>
   </div>
+  </div>
+
+  <div id="bmPanel" class="card" hidden style="margin-bottom:16px">
+    <h2 id="bmHead">Save this place</h2>
+    <p class="sub" id="bmWhere" style="margin:4px 0 12px"></p>
+    <label>Quick notes (tap one or more)</label>
+    <div class="chips" id="bmChips"></div>
+    <label for="bmText">Your own note (optional)</label>
+    <textarea id="bmText" spellcheck="true" style="min-height:110px" placeholder="Write anything you want to remember"></textarea>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="bmSave" type="button">Save</button>
+      <button class="btn ghost" id="bmCancel" type="button">Cancel</button>
+    </div>
+    <p style="margin:16px 0 0"><button class="btn ghost" id="tagEditBtn" type="button">Change the quick notes</button></p>
+    <div id="tagEdit" hidden style="margin-top:12px">
+      <label for="tagText">One quick note per line</label>
+      <textarea id="tagText" spellcheck="false" style="min-height:150px"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="tagSave" type="button">Save list</button>
+        <button class="btn ghost" id="tagReset" type="button">Back to the original list</button>
+      </div>
+    </div>
   </div>
 
   <div class="opts card" style="display:grid">
@@ -333,6 +390,17 @@ li.done button.chb .cn{color:var(--muted);font-weight:400}
         <option value="0">Off</option><option value="15">15 minutes</option><option value="30">30 minutes</option>
         <option value="45">45 minutes</option><option value="60">60 minutes</option>
       </select></div>
+  </div>
+
+  <button class="btn ghost" id="bmToggle" type="button" style="width:100%;margin-bottom:12px">Show bookmarks (0)</button>
+  <div id="bmWrap" hidden style="margin-bottom:16px">
+    <ul id="bmList" class="bmlist"></ul>
+    <div class="row">
+      <button class="btn" id="bmCopy" type="button">Copy notes</button>
+      <button class="btn ghost" id="bmTxt" type="button">Save as text</button>
+      <button class="btn ghost" id="bmCsv" type="button">Save as Excel (CSV)</button>
+      <button class="btn ghost" id="bmShare" type="button" hidden>Share</button>
+    </div>
   </div>
 
   <button class="btn ghost" id="chToggle" type="button" style="width:100%">Show chapters</button>
@@ -675,6 +743,7 @@ async function importChapterText(text, fileName){
 
 /* ---------- library ---------- */
 function renderLibrary(){
+  updateAllNotes();
   const box = $('#list'); box.innerHTML = '';
   if (!state.books.length){
     box.innerHTML = '<p class="empty">No books yet. Tap Add book to bring in your first one.</p>';
@@ -856,7 +925,8 @@ async function openBook(id){
   setPlayerCover(b.id);
   setSpeed(b.speed || 1, false);
   $('#editor').hidden = true; $('#editBtn').textContent = 'Edit chapters';
-  renderChapters(); setChaptersShown(false); setPlayLabel(); tick();
+  b.bookmarks = b.bookmarks || [];
+  renderChapters(); setChaptersShown(false); closeBmPanel(); setBookmarksShown(false); setPlayLabel(); tick();
   show('playView');
   setupMediaSession();
 }
@@ -1108,6 +1178,160 @@ function setupMediaSession(){
     navigator.mediaSession.setActionHandler('nexttrack', () => jumpChapter(1));
   } catch(e){}
 }
+
+/* ---------- bookmarks and notes ---------- */
+const DEFAULT_TAGS = ['Great quote', 'Key idea', 'To do', 'Share with team', 'Revisit', 'Question'];
+let tagsMem = null;
+function getTags(){
+  if (tagsMem) return tagsMem.slice();
+  try{ const v = JSON.parse(localStorage.getItem('abTags') || 'null'); if (Array.isArray(v) && v.length) return v; } catch(e){}
+  return DEFAULT_TAGS.slice();
+}
+function setTags(arr){ tagsMem = arr.slice(); try{ localStorage.setItem('abTags', JSON.stringify(arr)); } catch(e){} }
+
+const bmState = { id: null, t: 0, chapter: '', tags: new Set() };
+function renderChips(){
+  const box = $('#bmChips'); box.innerHTML = '';
+  const list = getTags();
+  for (const t of bmState.tags) if (!list.includes(t)) list.push(t);
+  for (const t of list){
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip' + (bmState.tags.has(t) ? ' on' : ''); b.textContent = t;
+    b.setAttribute('aria-pressed', bmState.tags.has(t) ? 'true' : 'false');
+    b.onclick = () => { if (bmState.tags.has(t)) bmState.tags.delete(t); else bmState.tags.add(t); renderChips(); };
+    box.append(b);
+  }
+}
+function openBmPanel(id){
+  const b = state.cur; if (!b) return;
+  b.bookmarks = b.bookmarks || [];
+  const bm = id ? b.bookmarks.find(x => x.id === id) : null;
+  const t = bm ? bm.t : Math.floor(audio.currentTime || 0);
+  const ci = chapterIndex(t);
+  bmState.id = bm ? bm.id : null; bmState.t = t;
+  bmState.chapter = bm ? bm.chapter : (ci >= 0 ? b.chapters[ci].name : '');
+  bmState.tags = new Set(bm ? bm.tags : []);
+  $('#bmHead').textContent = bm ? 'Edit bookmark' : 'Save this place';
+  $('#bmWhere').textContent = fmtFull(t) + (bmState.chapter ? ', ' + bmState.chapter : '');
+  $('#bmText').value = bm ? bm.note : '';
+  $('#tagEdit').hidden = true;
+  renderChips();
+  $('#bmPanel').hidden = false;
+  $('#bmPanel').scrollIntoView({ block: 'center' });
+}
+function closeBmPanel(){ $('#bmPanel').hidden = true; }
+$('#bmAdd').onclick = () => openBmPanel(null);
+$('#bmCancel').onclick = closeBmPanel;
+$('#bmSave').onclick = async () => {
+  const b = state.cur; b.bookmarks = b.bookmarks || [];
+  const note = $('#bmText').value.trim(), tags = [...bmState.tags];
+  if (bmState.id){
+    const bm = b.bookmarks.find(x => x.id === bmState.id);
+    if (bm){ bm.note = note; bm.tags = tags; }
+  } else {
+    b.bookmarks.push({ id: 'm' + Date.now(), t: bmState.t, chapter: bmState.chapter, tags, note, created: Date.now() });
+  }
+  b.bookmarks.sort((x, y) => x.t - y.t);
+  try{ await saveBook(b); } catch(e){ toast('Could not save the bookmark.'); return; }
+  closeBmPanel(); renderBookmarks();
+  toast('Bookmark saved at ' + fmt(bmState.t) + '.');
+};
+$('#tagEditBtn').onclick = () => {
+  const ed = $('#tagEdit'); ed.hidden = !ed.hidden;
+  if (!ed.hidden) $('#tagText').value = getTags().join('\n');
+};
+$('#tagSave').onclick = () => {
+  const list = $('#tagText').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  if (!list.length){ toast('Add at least one quick note, or tap Back to the original list.'); return; }
+  setTags([...new Set(list)]); $('#tagEdit').hidden = true; renderChips(); toast('Quick notes updated.');
+};
+$('#tagReset').onclick = () => { tagsMem = null; try{ localStorage.removeItem('abTags'); } catch(e){} $('#tagText').value = DEFAULT_TAGS.join('\n'); renderChips(); toast('Back to the original list.'); };
+
+function renderBookmarks(){
+  const b = state.cur; if (!b) return;
+  const list = b.bookmarks || [];
+  const ul = $('#bmList'); ul.innerHTML = '';
+  $('#bmToggle').textContent = ($('#bmWrap').hidden ? 'Show bookmarks (' : 'Hide bookmarks (') + list.length + ')';
+  if (!list.length){ ul.innerHTML = '<li class="emptybm">No bookmarks yet. Tap Bookmark this place while you listen.</li>'; return; }
+  for (const bm of list){
+    const li = document.createElement('li'); li.className = 'bm';
+    li.innerHTML = `<div class="bmtop"><span class="t">${fmtFull(bm.t)}</span></div>` +
+      (bm.chapter ? `<p class="bmch">${esc(bm.chapter)}</p>` : '') +
+      (bm.tags.length ? `<div class="bmtags">${bm.tags.map(t => `<span class="tg">${esc(t)}</span>`).join('')}</div>` : '') +
+      (bm.note ? `<p class="bmnote">${esc(bm.note)}</p>` : '') +
+      `<div class="row"><button class="btn" type="button" data-a="go">Go to this place</button><button class="btn ghost" type="button" data-a="edit">Edit</button><button class="btn danger" type="button" data-a="del">Delete</button></div>`;
+    li.querySelector('[data-a="go"]').onclick = () => { audio.currentTime = bm.t; audio.play().catch(() => {}); };
+    li.querySelector('[data-a="edit"]').onclick = () => openBmPanel(bm.id);
+    const del = li.querySelector('[data-a="del"]'); let armed = false;
+    del.onclick = async () => {
+      if (!armed){ armed = true; del.textContent = 'Tap to confirm'; setTimeout(() => { armed = false; del.textContent = 'Delete'; }, 4000); return; }
+      b.bookmarks = b.bookmarks.filter(x => x.id !== bm.id);
+      await saveBook(b); renderBookmarks(); toast('Bookmark deleted.');
+    };
+    ul.append(li);
+  }
+}
+function setBookmarksShown(show){
+  $('#bmWrap').hidden = !show;
+  renderBookmarks();
+}
+$('#bmToggle').onclick = () => setBookmarksShown($('#bmWrap').hidden);
+
+/* export */
+function exportDate(){ return new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
+function notesText(books){
+  const out = [];
+  for (const b of books){
+    const list = (b.bookmarks || []);
+    if (!list.length) continue;
+    out.push('NOTES: ' + b.title, 'Exported ' + exportDate(), '');
+    list.forEach(bm => {
+      out.push('[' + fmtFull(bm.t) + '] ' + (bm.chapter || ''));
+      if (bm.tags.length) out.push('Quick notes: ' + bm.tags.join(', '));
+      if (bm.note) out.push('Note: ' + bm.note);
+      out.push('');
+    });
+    out.push('');
+  }
+  return out.join('\n').trim() + '\n';
+}
+function csvCell(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+function notesCsv(books){
+  const rows = [['Book', 'Time', 'Chapter', 'Quick notes', 'Note', 'Saved on']];
+  for (const b of books) for (const bm of (b.bookmarks || []))
+    rows.push([b.title, fmtFull(bm.t), bm.chapter || '', bm.tags.join('; '), bm.note || '', new Date(bm.created || Date.now()).toLocaleDateString('en-GB')]);
+  return '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+}
+function safeName(n){ return String(n).replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Audiobook'; }
+function downloadFile(name, text, type){
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); toast('Copied. You can paste it anywhere.'); }
+  catch(e){
+    const ta = document.createElement('textarea'); ta.value = text; document.body.append(ta); ta.select();
+    try{ document.execCommand('copy'); toast('Copied. You can paste it anywhere.'); } catch(err){ toast('Could not copy. Use Save as text instead.'); }
+    ta.remove();
+  }
+}
+const haveNotes = books => books.some(b => (b.bookmarks || []).length);
+function wireExport(ids, getBooks, nameFn){
+  $(ids.copy).onclick = () => { const bks = getBooks(); if (!haveNotes(bks)){ toast('There are no notes to export yet.'); return; } copyText(notesText(bks)); };
+  $(ids.txt).onclick = () => { const bks = getBooks(); if (!haveNotes(bks)){ toast('There are no notes to export yet.'); return; } downloadFile(nameFn() + '.txt', notesText(bks), 'text/plain;charset=utf-8'); };
+  $(ids.csv).onclick = () => { const bks = getBooks(); if (!haveNotes(bks)){ toast('There are no notes to export yet.'); return; } downloadFile(nameFn() + '.csv', notesCsv(bks), 'text/csv;charset=utf-8'); };
+}
+wireExport({ copy: '#bmCopy', txt: '#bmTxt', csv: '#bmCsv' }, () => [state.cur], () => 'Notes - ' + safeName(state.cur.title));
+wireExport({ copy: '#allCopy', txt: '#allTxt', csv: '#allCsv' }, () => state.books, () => 'Audiobook notes');
+if (navigator.share){
+  $('#bmShare').hidden = false;
+  $('#bmShare').onclick = async () => {
+    if (!haveNotes([state.cur])){ toast('There are no notes to share yet.'); return; }
+    try{ await navigator.share({ title: 'Notes: ' + state.cur.title, text: notesText([state.cur]) }); } catch(e){}
+  };
+}
+function updateAllNotes(){ const box = $('#allNotes'); if (box) box.hidden = !haveNotes(state.books); }
 
 /* chapters: hidden until you ask for them */
 function setChaptersShown(show){
